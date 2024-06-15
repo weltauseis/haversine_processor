@@ -1,3 +1,4 @@
+use core::panic;
 use std::str::Chars;
 
 #[derive(Debug)]
@@ -10,47 +11,119 @@ pub enum JSONValue {
     Null,
 }
 
-#[derive(Debug)]
-pub enum JSONToken {
-    LBRACE,
-    RBRACE,
-    COMMA,
-    QUOTE,
-    LITERAL(String),
+pub fn parse_from_string(input: String) -> JSONValue {
+    let characters = input.chars().collect::<Vec<char>>();
+
+    let mut offset = 0;
+    return parse(&characters, &mut offset);
 }
 
-pub fn lex(input: String) -> Vec<JSONToken> {
-    let mut tokens: Vec<JSONToken> = Vec::new();
+fn parse(input: &[char], offset: &mut usize) -> JSONValue {
+    skip_spaces(input, offset);
+    match input[*offset] {
+        '{' => parse_object(input, offset),
+        '"' => parse_string(input, offset),
+        '+' | '-' | '0'..='9' => parse_number(input, offset),
+        _ => {
+            todo!("unhandled character : {}", input[*offset]);
+        }
+    }
+}
 
-    let mut characters = input.chars();
-    let mut maybe_next_char = characters.next();
+fn parse_object(input: &[char], offset: &mut usize) -> JSONValue {
+    // skip the opening brace
+    *offset += 1;
 
-    while maybe_next_char.is_some() {
-        let next_char = maybe_next_char.unwrap();
+    let mut obj: Vec<(String, JSONValue)> = Vec::new();
 
-        if !next_char.is_whitespace() {
-            match next_char {
-                '{' => {
-                    tokens.push(JSONToken::LBRACE);
-                }
-                '}' => {
-                    tokens.push(JSONToken::RBRACE);
-                }
-                ',' => {
-                    tokens.push(JSONToken::COMMA);
-                }
-                '\"' | '\'' => {
-                    tokens.push(JSONToken::QUOTE);
-                }
-                // literal
-                _ => {
-                    todo!("unhandled char {:?}", next_char)
-                }
-            }
+    // parse the key / value pairs
+    loop {
+        skip_spaces(input, offset);
+
+        // skip the quote
+        if input[*offset] != '\"' {
+            panic!("key for json object should be quoted (offset {offset}");
+        }
+        *offset += 1;
+
+        skip_spaces(input, offset);
+
+        // parse the key
+        let mut key = String::new();
+        while input[*offset] != '\"' {
+            key.push(input[*offset]);
+            *offset += 1;
+        }
+        *offset += 1;
+
+        skip_spaces(input, offset);
+
+        // skip the :
+        if input[*offset] != ':' {
+            panic!("missing colon separator for key/value pair in object (offset {offset}");
+        }
+        *offset += 1;
+
+        skip_spaces(input, offset);
+
+        // parse value and add to array
+        let value = parse(input, offset);
+        obj.push((key, value));
+
+        // quit if there are no more members
+        skip_spaces(input, offset);
+        if input[*offset] == '}' {
+            *offset += 1;
+            break;
         }
 
-        maybe_next_char = characters.next();
+        if input[*offset] != ',' {
+            panic!("object members should be separated by a comma (offset : {offset})");
+        }
+        *offset += 1;
+        skip_spaces(input, offset);
     }
 
-    return tokens;
+    return JSONValue::Object(obj);
+}
+
+fn parse_string(input: &[char], offset: &mut usize) -> JSONValue {
+    // skip the opening quote
+    *offset += 1;
+
+    // parse the string
+    let mut string = String::new();
+    while input[*offset] != '"' {
+        string.push(input[*offset]);
+        *offset += 1;
+    }
+
+    // skip the end quote
+    *offset += 1;
+
+    return JSONValue::String(string);
+}
+
+fn parse_number(input: &[char], offset: &mut usize) -> JSONValue {
+    // guess how long the number is
+    let start = *offset;
+    while match input[*offset] {
+        '+' | '-' | '.' | 'E' | 'e' | '0'..='9' => true,
+        _ => false,
+    } {
+        *offset += 1;
+    }
+
+    // try to parse it
+    let num_string: String = input[start..*offset].iter().collect();
+    let number = num_string.parse::<f64>().unwrap();
+
+    return JSONValue::Number(number);
+}
+
+#[inline]
+fn skip_spaces(input: &[char], offset: &mut usize) {
+    while input[*offset].is_whitespace() {
+        *offset += 1;
+    }
 }

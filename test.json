@@ -1,3 +1,4 @@
 {
-    "hello": "world"
+  "hello": "world",
+  "counter": 5.67e3
 }
