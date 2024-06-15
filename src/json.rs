@@ -1,5 +1,4 @@
 use core::panic;
-use std::str::Chars;
 
 #[derive(Debug)]
 pub enum JSONValue {
@@ -24,6 +23,8 @@ fn parse(input: &[char], offset: &mut usize) -> JSONValue {
         '{' => parse_object(input, offset),
         '"' => parse_string(input, offset),
         '+' | '-' | '0'..='9' => parse_number(input, offset),
+        '[' => parse_array(input, offset),
+        't' | 'f' | 'n' => parse_special(input, offset),
         _ => {
             todo!("unhandled character : {}", input[*offset]);
         }
@@ -87,6 +88,36 @@ fn parse_object(input: &[char], offset: &mut usize) -> JSONValue {
     return JSONValue::Object(obj);
 }
 
+fn parse_array(input: &[char], offset: &mut usize) -> JSONValue {
+    // skip the opening bracket
+    *offset += 1;
+
+    let mut arr: Vec<JSONValue> = Vec::new();
+
+    // parse the values
+    loop {
+        skip_spaces(input, offset);
+
+        let value = parse(input, offset);
+        arr.push(value);
+
+        // quit if there are no more members
+        skip_spaces(input, offset);
+        if input[*offset] == ']' {
+            *offset += 1;
+            break;
+        }
+
+        if input[*offset] != ',' {
+            panic!("object members should be separated by a comma (offset : {offset})");
+        }
+        *offset += 1;
+        skip_spaces(input, offset);
+    }
+
+    return JSONValue::Array(arr);
+}
+
 fn parse_string(input: &[char], offset: &mut usize) -> JSONValue {
     // skip the opening quote
     *offset += 1;
@@ -119,6 +150,24 @@ fn parse_number(input: &[char], offset: &mut usize) -> JSONValue {
     let number = num_string.parse::<f64>().unwrap();
 
     return JSONValue::Number(number);
+}
+
+fn parse_special(input: &[char], offset: &mut usize) -> JSONValue {
+    match input[*offset..] {
+        ['t', 'r', 'u', 'e', ..] => {
+            *offset += 4;
+            return JSONValue::Boolean(true);
+        }
+        ['f', 'a', 'l', 's', 'e', ..] => {
+            *offset += 5;
+            return JSONValue::Boolean(false);
+        }
+        ['n', 'u', 'l', 'l', ..] => {
+            *offset += 4;
+            return JSONValue::Null;
+        }
+        _ => panic!("unknown value at offset {offset}"),
+    }
 }
 
 #[inline]

@@ -1,4 +1,5 @@
 {
   "hello": "world",
-  "counter": 5.67e3
+  "counter": 5.67e3,
+  "list of stuff": ["blabla", 873, { "bip": "bop", "boup": true, "flip": null }]
 }
