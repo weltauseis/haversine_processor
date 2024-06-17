@@ -1,7 +1,5 @@
 use std::io::Read;
 
-use crate::json::JSONValue;
-
 // NOTE(casey): EarthRadius is generally expected to be 6372.8
 fn reference_haversine(x0: f64, y0: f64, x1: f64, y1: f64, earth_radius: f64) -> f64 {
     let mut lat1 = y0;
@@ -32,20 +30,18 @@ pub fn calculate_average_haversine(pairs: Vec<(f64, f64, f64, f64)>) -> f64 {
 }
 
 pub fn calculate_difference(average: f64, reference_path: &str) -> (f64, f64) {
-    let mut references_file = std::fs::File::open(reference_path).unwrap();
-    let mut bytes: [u8; 8] = [0; 8];
+    let ref_distances = std::fs::read(reference_path).unwrap();
+    let mut decoded_distances = Vec::new();
 
-    let mut distances = Vec::new();
-    loop {
-        let nb_read = references_file.read(&mut bytes).unwrap();
-        if nb_read < 8 {
+    for (i, bytes) in ref_distances.chunks_exact(8).enumerate() {
+        if i == ref_distances.len() - 1 {
             break;
         }
 
-        let dist = f64::from_le_bytes(bytes);
-        distances.push(dist);
+        let dist = f64::from_le_bytes(bytes.try_into().unwrap());
+        decoded_distances.push(dist);
     }
 
-    let reference_average = distances.iter().sum::<f64>() / distances.len() as f64;
+    let reference_average = decoded_distances.iter().sum::<f64>() / decoded_distances.len() as f64;
     return (reference_average, average - reference_average);
 }
