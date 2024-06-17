@@ -20,7 +20,7 @@
                 }
             },
             "args": [
-                ".\\test.json"
+                "../haversine_generator/output.json"
             ],
             "cwd": "${workspaceFolder}"
         },

@@ -1,5 +1,3 @@
-use std::io::Read;
-
 // NOTE(casey): EarthRadius is generally expected to be 6372.8
 fn reference_haversine(x0: f64, y0: f64, x1: f64, y1: f64, earth_radius: f64) -> f64 {
     let mut lat1 = y0;
