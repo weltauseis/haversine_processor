@@ -36,6 +36,7 @@ pub fn elapsed_to_ms(elapsed: u64, freq: u64) -> u64 {
 }
 
 // main function so that we can compile the file alone for testing
+#[allow(dead_code)]
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
