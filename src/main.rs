@@ -11,6 +11,7 @@ fn main() {
         println!("Usage :");
         println!("haversine_processor [haversine_input.json]");
         println!("haversine_processor [haversine_input.json] [answers.f64]");
+        std::process::exit(1);
     }
 
     let startup_time = timing::read_cpu_timer();
@@ -85,8 +86,9 @@ fn main() {
 
     let total_elapsed = end_time - start_time;
     println!(
-        "\nTotal time : {} ms",
-        timing::elapsed_to_ms(total_elapsed, freq)
+        "\nTotal time : {} ms (CPU freq {})",
+        timing::elapsed_to_ms(total_elapsed, freq),
+        freq
     );
 
     let startup_elapsed = startup_time - start_time;
